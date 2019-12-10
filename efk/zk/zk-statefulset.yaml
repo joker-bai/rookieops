@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zk-cluster
+  namespace: kube-ops
+spec:
+  serviceName: zookeeper
+  replicas: 3
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      initContainers:
+      - name: set-myid
+        image: registry.cn-hangzhou.aliyuncs.com/rookieops/zookeeper:3.4.14 
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          set -ex
+          mkdir /data/zk/{data,log}
+          # 从Pod的序号生成myid
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          get_id=${BASH_REMATCH[1]}
+          echo $((1 + $get_id)) > /data/zk/data/myid
+        volumeMounts:
+        - name: data
+          mountPath: /data/zk
+      containers:
+      - name: zookeeper
+        image: registry.cn-hangzhou.aliyuncs.com/rookieops/zookeeper:3.4.14 
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/bin/sh"
+        - "-c"
+        - "./bin/zkServer.sh start-foreground"
+        ports:
+        - name: zk
+          containerPort: 2181
+        - name: server
+          containerPort: 12888
+        - name: leader-election
+          containerPort: 13888
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+          limits:
+            cpu: 100m
+            memory: 1Gi
+        volumeMounts:
+        - name: data
+          mountPath: /data/zk
+        - name: config
+          mountPath: /opt/zookeeper-3.4.14/conf/
+        readinessProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        livenessProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      volumes:
+      - name: config
+        configMap:
+          name: zk-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        app: zookeeper
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: zk-data-db
+      resources:
+        requests:
+          storage: 10Gi

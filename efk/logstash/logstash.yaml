@@ -1,0 +1,30 @@
+apiVersion: apps/v1beta2 
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: kube-ops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: registry.cn-hangzhou.aliyuncs.com/rookieops/logstash-kubernetes:7.1.1
+        volumeMounts:
+        - name: config
+          mountPath: /opt/logstash/config/containers.conf
+          subPath: containers.conf
+        command:
+        - "/bin/sh"
+        - "-c"
+        - "/opt/logstash/bin/logstash -f /opt/logstash/config/containers.conf"
+      volumes:
+      - name: config
+        configMap:
+          name: logstash-k8s-config

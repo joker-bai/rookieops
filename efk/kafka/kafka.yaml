@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kube-ops
+spec:
+  serviceName: kafka-svc
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+             - weight: 1
+               podAffinityTerm:
+                 labelSelector:
+                    matchExpressions:
+                      - key: "app"
+                        operator: In
+                        values: 
+                        - zk
+                 topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 300
+      containers:
+      - name: kafka
+        image: registry.cn-hangzhou.aliyuncs.com/rookieops/kafka:2.3.1-beta
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        command:
+        - "/bin/sh"
+        - "-c"
+        - "./bin/kafka-server-start.sh config/server.properties --override broker.id=${HOSTNAME##*-}"
+        ports:
+        - name: server
+          containerPort: 9092
+        volumeMounts:
+        - name: config
+          mountPath: /opt/kafka/config/server.properties
+          subPath: server.properties
+        - name: data
+          mountPath: /data/kafka/logs
+#        readinessProbe:
+#          exec:
+#            command:
+#              - "/bin/sh"
+#              - "-c"
+#              - "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9092"
+      volumes:
+      - name: config
+        configMap:
+          name: kafka-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: kafka-data-db
+      resources:
+        requests:
+          storage: 10Gi
+
+
