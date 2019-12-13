@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nfs-client-prosioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-prosioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+      - name: nfs-client-prosioner
+        image: registry.cn-hangzhou.aliyuncs.com/rookieops/nfs-client-provisioner:v0.1
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: nfs-client-root
+          mountPath: /data/pv
+        env:
+        - name: PROVISIONER_NAME
+          value: rookieops/nfs 
+        - name: NFS_SERVER
+          value: 172.16.0.251 
+        - name: NFS_PATH
+          value: /data/k8s
+      volumes:
+      - name: nfs-client-root
+        nfs:
+          server: 172.16.0.251
+          path: /data/k8s
