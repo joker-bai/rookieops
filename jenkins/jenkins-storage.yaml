@@ -1,0 +1,17 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: jenkins-db
+provisioner: rookieops/nfs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: devops
+spec:
+  accessModes: ['ReadWriteOnce']
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: jenkins-db
