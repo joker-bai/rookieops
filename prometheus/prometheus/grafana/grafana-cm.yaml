@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: kube-ops
+data:
+  grafana.ini: |
+    [server]
+    root_url = http://119.3.206.113:30370
+    [smtp]
+    enabled = true
+    host = smtp.163.com:25
+    user = baidjay@163.com
+    password = dandy9989859
+    skip_verify = true
+    from_address = baidjay@163.com
+    [alerting]
+    enabled = true
+    execute_alerts = true
