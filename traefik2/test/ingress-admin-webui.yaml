@@ -1,0 +1,42 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-webui
+  namespace: kube-system
+spec:
+  entryPoints:
+    - web 
+  routes:
+  - match: Host(`traefik.rookieops.top`)
+    kind: Rule
+    services:
+    - name: traefik
+      port: 8080
+    middlewares:  # 使用上面新建的中间件
+    - name: redirect-https
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-webui-tls
+  namespace: kube-system
+spec:
+  entryPoints:
+  - websecure  # 注意这里是websecure这个entryPoint，监控443端口
+  routes:
+  - match: Host(`traefik.rookieops.top`)
+    kind: Rule
+    services:
+    - name: traefik
+      port: 8080
+  tls:
+    certResolver: default  # 使用我们配置的 default 这个解析器
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: kube-system
+spec:
+  redirectScheme:
+    scheme: https

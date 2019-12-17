@@ -1,0 +1,13 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: foo
+spec:
+  entryPoints:
+  - web
+  routes:
+  - match: Host(`*`)
+    kind: Rule
+    services:
+    - name: foo
+      port: 8080 

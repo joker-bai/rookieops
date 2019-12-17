@@ -1,0 +1,87 @@
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: traefik
+  namespace: kube-system 
+  labels:
+    k8s-app: traefik-ingress-lb
+spec:
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
+  template:
+    metadata:
+      labels:
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      tolerations:
+      - operator: "Exists"
+      nodeSelector:
+        kubernetes.io/hostname: 172.16.0.33
+      containers:
+      - image: traefik:v2.0
+        name: traefik-ingress-lb
+        ports:
+        - name: web
+          containerPort: 80
+        - name: websecure
+          containerPort: 443
+        - name: admin
+          containerPort: 8080
+        - name: redis
+          containerPort: 6379
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        args:
+        - --entrypoints.web.Address=:80
+        - --entrypoints.websecure.Address=:443
+        - --entrypoints.redis.Address=:6379
+        - --entrypoints.foo
+        - --api.insecure=true
+        - --providers.kubernetescrd
+        - --providers.file.watch=true
+        - --providers.file.filename=/config/traefik-dynamic.toml
+        - --api
+        - --api.dashboard=true
+        - --accesslog
+        # 使用 tls 验证这种方式
+        - --certificatesresolvers.default.acme.tlsChallenge=true
+        # # 邮箱配置
+        - --certificatesResolvers.default.acme.email=rookieops@163.com
+        # # 保存 ACME 证书的位置
+        - --certificatesResolvers.default.acme.storage="acme.json"
+        # # 下面是用于测试的ca服务，如果https证书生成成功了，则移除下面参数
+        #- --certificatesresolvers.default.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+        - --certificatesresolvers.default.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      volumes:
+      - name: config
+        configMap:
+          name: traefik-dynamic-conf
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik
+  namespace: kube-system 
+spec:
+  type: NodePort
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - protocol: TCP
+      port: 8080
+      name: admin
+    - name: web
+      port: 80
+      protocol: TCP
+    - name: websecure
+      port: 443
+      protocol: TCP
+    - name: redis
+      port: 6379
+      protocol: TCP
