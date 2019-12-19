@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: kube-ops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: web
+          containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-ng
+  namespace: kube-ops
+spec:
+  selector:
+    app: nginx
+  ports:
+  - name: web
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-ingress
+spec:
+  type: ExternalName
+  ports:
+  - name: web
+    port: 80
+  externalName: test-ng.kube-ops.svc.cluster.local
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-ingress-demo
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - host:
+    http:
+      paths:
+      - backend:
+          serviceName: test-ingress 
+          servicePort: 80
+        path: /
