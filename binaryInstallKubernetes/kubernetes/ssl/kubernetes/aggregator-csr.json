@@ -1,0 +1,17 @@
+{
+  "CN": "aggregator",
+  "hosts": [""], 
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+        {
+            "C": "CN",
+            "L": "Chongqing",
+            "ST": "Chongqing",
+          "O": "kubernetes",
+            "OU": "System"
+        }
+  ]
+}
